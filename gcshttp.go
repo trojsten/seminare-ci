@@ -18,6 +18,11 @@ type MyHandler struct {
 }
 
 func main() {
+	bucket_name := os.Getenv("BUCKET_NAME")
+	if bucket_name == "" {
+		panic("BUCKET_NAME env not set")
+	}
+
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -26,10 +31,6 @@ func main() {
 	}
 	defer client.Close()
 
-	bucket_name := os.Getenv("BUCKET_NAME")
-	if bucket_name == "" {
-		panic("BUCKET_NAME env not set")
-	}
 	bucket := client.Bucket(bucket_name)
 
 	http.Handle("/", MyHandler{bucket, ctx})
