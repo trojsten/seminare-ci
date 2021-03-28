@@ -12,9 +12,14 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-type MyHandler struct {
+type Handler struct {
 	bucket *storage.BucketHandle
-	ctx    context.Context
+}
+
+func NewHandler(bucket *storage.BucketHandle) Handler {
+	return Handler{
+		bucket: bucket,
+	}
 }
 
 func main() {
@@ -33,44 +38,49 @@ func main() {
 
 	bucket := client.Bucket(bucket_name)
 
-	http.Handle("/", MyHandler{bucket, ctx})
+	http.Handle("/", NewHandler(bucket))
 
 	port := os.Getenv("PORT")
+
 	if port == "" {
 		port = "8080"
 	}
 
 	log.Printf("Listening on :%s", port)
+
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (h MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" {
 		fmt.Fprint(w, "gcshttp")
 		return
 	}
 
 	oh := h.bucket.Object(r.URL.Path[1:])
-	objAttrs, err := oh.Attrs(h.ctx)
+	objAttrs, err := oh.Attrs(r.Context())
 	if err != nil {
 		log.Println(err, r.URL)
 		http.NotFound(w, r)
 		return
 	}
-	rc, err := oh.NewReader(h.ctx)
+
+	rc, err := oh.NewReader(r.Context())
 	if err != nil {
 		log.Println(err, r.URL)
 		http.NotFound(w, r)
 		return
 	}
+
 	defer rc.Close()
 
 	w.Header().Set("Content-Type", objAttrs.ContentType)
 	w.Header().Set("Content-Encoding", objAttrs.ContentEncoding)
 	w.Header().Set("Content-Length", strconv.Itoa(int(objAttrs.Size)))
 	w.WriteHeader(200)
+
 	if _, err := io.Copy(w, rc); err != nil {
 		log.Println(err, r.URL)
 		return
