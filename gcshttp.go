@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	"cloud.google.com/go/storage"
 )
@@ -77,9 +76,6 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer rc.Close()
 
 	w.Header().Set("Content-Type", objAttrs.ContentType)
-	w.Header().Set("Content-Encoding", objAttrs.ContentEncoding)
-	w.Header().Set("Content-Length", strconv.Itoa(int(objAttrs.Size)))
-	w.WriteHeader(200)
 
 	if _, err := io.Copy(w, rc); err != nil {
 		log.Println(err, r.URL)
