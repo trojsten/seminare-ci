@@ -1,4 +1,4 @@
-runtime: go115
+runtime: go122
 
 env_variables:
   BUCKET_NAME: "seminare-ci.appspot.com"
